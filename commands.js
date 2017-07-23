@@ -10,12 +10,16 @@ sql.open('./user.sqlite');
 
 exports.commandCenter = (message) => {
 
-  sql.get('SELECT * FROM scores WHERE userId = "${message.author.id}"').then(row => {
-
+  sql.get('SELECT * FROM user WHERE user_id ="${message.author.id}"').then(row => {
+    if (!row) {
+      // Insert user if it doesn't exist
+      sql.run('INSERT INTO user (user_id, name) VALUES (?, ?)', [message.author.id, message.author.username]);
+    }
   }).catch(() => {
+    // Create USER table if it doesn't exist, insert person using command into USER table.
     console.error;
     sql.run('CREATE TABLE IF NOT EXISTS user (user_id INTEGER, name TEXT)').then(() => {
-    sql.run('INSERT INTO user (user_id, name) VALUES (?, ?)', [message.author.id, message.author.username]);
+      sql.run('INSERT INTO user (user_id, name) VALUES (?, ?)', [message.author.id, message.author.username]);
     });
   });
 
@@ -23,14 +27,48 @@ exports.commandCenter = (message) => {
   // This command responds to a ping
   // Required Permissions: Moofle or Admin
   if (message.content.startsWith(config.prefix + 'ping')) { 
-  // Send "pong" to the same channel 
-  message.channel.send('pong'); 
+    // Check permissions
+    if (!permissions.isMoofle(message) && !permissions.isAdmin(message)) {
+      return;
+    }
+    // Send "pong" to the same channel 
+    message.channel.send('pong'); 
+  }
+
+  // !addfilm
+  // This command adds a film to the database
+  // Required Permissions: Moofle
+  if (message.content.startsWith(config.prefix + 'addfilm')) {
+    // Check permissions
+    if (!permissions.isMoofle(message)) {
+      return;
+    }
+
+    let newFilm = message.content.split(' ').slice(1).join(' ') || '';
+    sql.get('SELECT * FROM film WHERE name=?', [newFilm]).then(row => {
+      console.log(row);
+      if (!row) {
+      // Insert film if it doesn't exist
+      sql.run('INSERT INTO film (name) VALUES (?)', [newFilm]);
+      }
+    }).catch(() => {
+      // Create FILM table if it doesn't exist, insert film
+      console.error;
+      sql.run('CREATE TABLE IF NOT EXISTS film (name TEXT)').then(() => {
+        sql.run('INSERT INTO film (name) VALUES (?)', [newFilm]);
+      }); 
+    });
   }
 
   // !setprefix
   // This command sets the prefix for all commands
   // Required Permissions: Moofle or Admin
-  if(message.content.startsWith(config.prefix + "setprefix")) {
+  if(message.content.startsWith(config.prefix + 'setprefix')) {
+    // Check permissions
+    if(!permissions.isMoofle(message) && !permissions.isAdmin(message)) {
+      return 
+    }
+
     // Gets the prefix from the command (eg. '!setprefix +' it will take the '+' from it). Will only accept length of 1 and symbols.
     let newPrefix = message.content.split(' ').slice(1, 2)[0] || '';
     // Set regex pattern to allow symbols
@@ -125,6 +163,5 @@ exports.commandCenter = (message) => {
     }
     else message.channel.send('No you are not permitted');
   }
-
 
 }

@@ -12,3 +12,21 @@ exports.isMoofle = (message) => {
     return false;
   }
 }
+
+exports.isUser = (message) => {
+  if (message.member.roles.has(config.roleID)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+exports.isAdmin = (message) => {
+  if (message.member.roles.has(config.adminID)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
